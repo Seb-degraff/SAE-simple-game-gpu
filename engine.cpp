@@ -7,10 +7,12 @@
 #include "triangle-sapp.glsl.h"
 
 #include "engine.hpp"
-#include "draw.cpp"
+#include "draw.hpp"
 
+extern "C" {
+    __declspec(dllimport) void game_frame(draw_data_t* draw_data);
+}
 
-void game_frame();
 
 // "Engine" part of the codebase. This means it 
 // NOTE: Some code based on the sokol sample "triangle-sapp.c"
@@ -23,7 +25,7 @@ static struct {
 } state;
 
 static void init(void)
-{
+{    
     sg_desc desc = (sg_desc){
         .context = sapp_sgcontext(),
         .logger.func = slog_func,
@@ -31,14 +33,14 @@ static void init(void)
     sg_setup(desc);
 
     state.bind.vertex_buffers[0] = sg_make_buffer((sg_buffer_desc){
-        .size = sizeof(vertex_buffer),
+        .size = VERT_BUFFER_BYTE_SIZE,
         .usage = SG_USAGE_DYNAMIC,
         .label = "triangle-vertices",
     });
     
     state.bind.index_buffer = sg_make_buffer((sg_buffer_desc){
         .type = SG_BUFFERTYPE_INDEXBUFFER,
-        .size = sizeof(index_buffer),
+        .size = INDEX_BUFFER_BYTE_SIZE,
         .usage = SG_USAGE_DYNAMIC,
         .label = "triangle-indices",
     });
@@ -73,15 +75,17 @@ void frame(void)
     sg_apply_pipeline(state.pip);
     sg_apply_bindings(&state.bind);
 
-    // clear draw.cpp buffers
-    clear_draw_buffers();
+    draw_data_t dd = {
+        .window_w = sapp_width(),
+        .window_h = sapp_height(),
+    };
 
-    game_frame();
+    game_frame(&dd);
     
-    sg_update_buffer(state.bind.vertex_buffers[0], (sg_range) { .ptr = vertex_buffer, .size = vertex_buffer_used * sizeof(*vertex_buffer) });
-    sg_update_buffer(state.bind.index_buffer, (sg_range) { .ptr = index_buffer, .size = index_buffer_used * sizeof(*index_buffer) });
+    sg_update_buffer(state.bind.vertex_buffers[0], (sg_range) { .ptr = dd.vertex_buffer, .size = dd.vertex_buffer_used * sizeof(float) });
+    sg_update_buffer(state.bind.index_buffer, (sg_range) { .ptr = dd.index_buffer, .size = dd.index_buffer_used * sizeof(uint32_t) });
 
-    sg_draw(0, index_buffer_used, 1);
+    sg_draw(0, dd.index_buffer_used, 1);
     sg_end_pass();
     sg_commit();
 }
@@ -103,6 +107,7 @@ sapp_desc sokol_main(int argc, char* argv[])
         .window_title = "Triangle (sokol-app)",
         .icon.sokol_default = true,
         .logger.func = slog_func,
+        .win32_console_attach = true,
     };
 }
 

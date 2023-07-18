@@ -1,5 +1,7 @@
 #pragma once // so that this header is included a maximum of one time per compilation unit. That way we don't get double declarations.
 
+#define EXPORT __declspec(dllexport)    
+
 struct Color
 {
     float r, g, b, a;
