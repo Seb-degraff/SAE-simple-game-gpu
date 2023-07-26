@@ -69,18 +69,19 @@ static void init(void)
 
 void frame(void)
 {
-    sg_begin_default_pass(&state.pass_action, sapp_width(), sapp_height());
-    sg_apply_pipeline(state.pip);
-    sg_apply_bindings(&state.bind);
-
     // clear draw.cpp buffers
     clear_draw_buffers();
 
     game_frame();
-    
+
+    // update vertex and index buffer on the GPU
     sg_update_buffer(state.bind.vertex_buffers[0], (sg_range) { .ptr = vertex_buffer, .size = vertex_buffer_used * sizeof(*vertex_buffer) });
     sg_update_buffer(state.bind.index_buffer, (sg_range) { .ptr = index_buffer, .size = index_buffer_used * sizeof(*index_buffer) });
 
+    // render
+    sg_begin_default_pass(&state.pass_action, sapp_width(), sapp_height());
+    sg_apply_pipeline(state.pip);
+    sg_apply_bindings(&state.bind);
     sg_draw(0, index_buffer_used, 1);
     sg_end_pass();
     sg_commit();
